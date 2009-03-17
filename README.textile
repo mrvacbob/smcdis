@@ -1,0 +1,37 @@
+=======================================
+
+What it's supposed to be
+
+=======================================
+
+smcdis is a disassembler and explorer for SNES ROM images.
+Since ROM images are unformatted, it uses abstract interpretation
+to find all possible function entry points and tell apart text and
+data sections.
+
+=======================================
+
+What it actually does
+
+=======================================
+
+Figures out the ROM format and original dumper hardware for (most)
+images, and prints out a lot of headers, with more accurate meanings
+than all other SNES emulators I tried (including bsnes). Unfortunately
+these fields are all useless, so I guess it's just historically interesting?
+
+=======================================
+
+TODO
+
+=======================================
+
+# Print Japanese ROM names in the right charset
+# Fill out the empty entries in company_names[]
+# Remember what disasm.cpp was supposed to do (besides the entire
+rest of the program…) and finish it
+
+The abstract interpreter doesn't have to be very good (unless games
+switch between 8- and 16-bit more than I think), and probably doesn't even
+have to bother with known-1/known-0 dataflow. That can be saved for the
+SNES decompiler.
