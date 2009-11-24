@@ -55,14 +55,14 @@ static const char *yes(bool y)
 static size_t smc_header(stream_reader &smc) {
 	size_t fs = smc.size(), extrasize = fs % SMC_BLOCK_SIZE;
 	
-	fprintf(stderr, "-size %#lx, %lu 32KB blocks, %lu 8KB pages\n", fs, fs/0x8000, fs/8192);
+	fprintf(stderr, "-File size: %lu 32KB blocks, %lu 8KB pages\n", fs/0x8000, fs/8192);
 	
 	if (extrasize == 0) {
 		fprintf(stderr, "-No copier header found (%lu bytes left over).\n", extrasize);
 	} else {
 		swc_header swc;
 		fig_header fig;
-		fprintf(stderr, "-Copier header found?\n");
+		fprintf(stderr, "-Copier header found?\n\n");
 		
 		swc = read_swc_header(smc);
 		smc.seek(0);
@@ -70,27 +70,27 @@ static size_t smc_header(stream_reader &smc) {
 		
 		if (swc.magic == 0xAABB) {
 			if (swc.mode_select) {
-				printf("---Front Fareast SWC/SMC header:\n");			
-				printf("8KB pages: %d (%s)\n", swc.size, (swc.size == fs/8192) ? "correct" : "incorrect");
-				printf("Mode select: %x\n", swc.mode_select);
-				printf("Jump to $8000 instead of RST: %s\n", yes(swc.mode));
-				printf("Multi-image: %s\n", yes(swc.multi));
-				printf("SRAM map: %s\n", swc.sram ? "HiROM" : "LoROM");
-				printf("DRAM map: %s\n", swc.dram ? "HiROM" : "LoROM");
-				printf("SRAM size: %x (%d KBit)\n", swc.sram_size, swc.sram_size ? 1 << (swc.sram_size+3) : 0);
-				printf("Code: %d (%s)\n\n", swc.code, (swc.code == 4) ? "correct" : "incorrect");
+				printf("Front Fareast SWC/SMC header:\n");			
+				printf("\t8KB pages: %d (%s)\n", swc.size, (swc.size == fs/8192) ? "correct" : "incorrect");
+				printf("\tMode select: %x\n", swc.mode_select);
+				printf("\tJump to $8000 instead of RST: %s\n", yes(swc.mode));
+				printf("\tMulti-image: %s\n", yes(swc.multi));
+				printf("\tSRAM map: %s\n", swc.sram ? "HiROM" : "LoROM");
+				printf("\tDRAM map: %s\n", swc.dram ? "HiROM" : "LoROM");
+				printf("\tSRAM size: %x (%d KBit)\n", swc.sram_size, swc.sram_size ? 1 << (swc.sram_size+3) : 0);
+				printf("\tCode: %d (%s)\n\n", swc.code, (swc.code == 4) ? "correct" : "incorrect");
 			} else {
 				printf("---Broken SWC/SMC header(?):\n");
-				printf("8KB pages: %d (%s)\n", swc.size, (swc.size == fs/8192) ? "correct" : "incorrect");
-				printf("Bytes 2 and 3: %#x %#x\n", swc.mode_select, swc.byte3);
-				printf("Code: %d (%s)\n\n", swc.code, (swc.code == 4) ? "correct" : "incorrect");
+				printf("\t8KB pages: %d (%s)\n", swc.size, (swc.size == fs/8192) ? "correct" : "incorrect");
+				printf("\tBytes 2 and 3: %#x %#x\n", swc.mode_select, swc.byte3);
+				printf("\tCode: %d (%s)\n\n", swc.code, (swc.code == 4) ? "correct" : "incorrect");
 			}
 		} else if (fig.ex2 == 0x80 || fig.ex2 == 0x82 || fig.ex2 == 0x83 || fig.ex1 == 0xDD) {
-			printf("---Pro Fighter header:\n");
-			printf("8KB pages: %d (%s)\n", fig.size, (fig.size == fs/8192) ? "correct" : "incorrect");
-			printf("Multi-image: %s\n", yes(fig.multi));
-			printf("ROM type: %s\n", fig.hirom ? "HiROM" : "LoROM");
-			printf("Complicated code: %.2X%.2X\n", fig.ex1, fig.ex2);
+			printf("Pro Fighter header:\n");
+			printf("\t8KB pages: %d (%s)\n", fig.size, (fig.size == fs/8192) ? "correct" : "incorrect");
+			printf("\tMulti-image: %s\n", yes(fig.multi));
+			printf("\tROM type: %s\n", fig.hirom ? "HiROM" : "LoROM");
+			printf("\tComplicated code: %.2X%.2X\n", fig.ex1, fig.ex2);
 		} else printf("Magic %#x unknown...\n", swc.magic);
 		
 		smc.seek(512);
@@ -161,7 +161,7 @@ static rom_header_t find_rom_header(stream_reader &smc, size_t *off)
 	rom_header_t headers[3];
 	int scores[3] = {0};
 	
-	for (int i = 0; i < sizeof(header_offsets) / sizeof(unsigned); i++) {
+	for (size_t i = 0; i < sizeof(header_offsets) / sizeof(unsigned); i++) {
 		unsigned off = header_offsets[i] + smc_off;
 		
 		if (rom_size < off) {
@@ -175,6 +175,8 @@ static rom_header_t find_rom_header(stream_reader &smc, size_t *off)
 		}
 		fprintf(stderr, "-Score: %d\n", scores[i]);
 	}
+	
+	fprintf(stderr, "\n");
 	
 	int hnum = 0;
 	
@@ -195,7 +197,7 @@ static void clean_puts(char *n, size_t s)
 	putchar('\n');
 }
 
-static void hex_puts(char *n, size_t s, int w)
+static void hex_puts(char *n, size_t s, size_t w)
 {
 	size_t lines = s / w;
 	
@@ -220,25 +222,25 @@ static void dump_rom_header(rom_header_t &h)
 	if (h.company2 == 0x33) {
 		printf("Game code: ");
 		clean_puts(h.game_code, 4);
-		printf("Expansion RAM size: %d (%d KBit)\n"
-			   "Special version: v%d\n"
-			   "Cartridge sub-id: %d\n",
+		printf("\tExpansion RAM size: %d (%d KBit)\n"
+			   "\tSpecial version: v%d\n"
+			   "\tCartridge sub-id: %d\n",
 			   h.expansion_ram, h.expansion_ram ? (1 << (h.expansion_ram + 3)) : 0, h.special_version, h.subcartridge);
 	}
-	printf("Name: ");
+	printf("\tName: ");
 	clean_puts(h.rom_name, 21);
-	printf("Map mode: %#x\n"
-		   "ROM type: %#x\n"
-		   "ROM size: %d (%d MBit)\n"
-		   "SRAM size: %d (%d KBit)\n"
-		   "Region: %d (%s)\n"
-		   "Company: %d (%s)\n"
-		   "Version: 1.%d\n"
-		   "Inverse checksum: %#x\n"
-		   "Checksum: %#x (%s)\n\n",
+	printf("\tMap mode: %#x\n"
+		   "\tROM type: %#x\n"
+		   "\tROM size: %d (%d MBit)\n"
+		   "\tSRAM size: %d (%d KBit)\n"
+		   "\tRegion: %d (%s)\n"
+		   "\tCompany: %d (%s)\n"
+		   "\tVersion: 1.%d\n"
+		   "\tInverse checksum: %#x\n"
+		   "\tChecksum: %#x %s\n\n",
 		   h.map_mode , h.cart_type, h.rom_size, 1 << (h.rom_size-7),
 		   h.sram_size, 1 << (h.sram_size + 3), h.region, get_rom_region_name(h), h.company2 == 0x33 ? h.company1 : h.company2, get_rom_company_name(h),
-		   h.version, h.ichecksum, h.checksum, (h.ichecksum + h.checksum == 0xFFFF) ? "okay" : "damaged");
+		   h.version, h.ichecksum, h.checksum, (h.ichecksum + h.checksum == 0xFFFF) ? "" : "(!)");
 }
 
 static void set_ram_type(uint8_t type, rom_info_t &ri)
@@ -277,13 +279,13 @@ static void find_game_chips(rom_header_t &rh, rom_info_t &ri)
 static void dump_chip_list(rom_info_t &ri)
 {
 	const char *coproc_names[] = {"None", "DSP", "Super FX", "OBC1", "SA-1"};
-	printf("Determined:\n");
-	if (ri.coprocessor) printf("Coprocessor: %s\n", ri.coprocessor >= UnknownCPU ? "Unknown" : coproc_names[ri.coprocessor]);
-	if (ri.dsp_ver) printf("DSP version: %d\n", ri.dsp_ver);
-	printf("Memory map: Mode %x\n", ri.map_mode);
-	printf("CPU in fast mode: %s\n", yes(ri.fastrom));
-	printf("RAM: %s\n", yes(ri.ram));
-	printf("Battery: %s\n\n", yes(ri.battery));
+	printf("Hardware features:\n");
+	if (ri.coprocessor) printf("\tCoprocessor: %s\n", ri.coprocessor >= UnknownCPU ? "Unknown" : coproc_names[ri.coprocessor]);
+	if (ri.dsp_ver) printf("\tDSP version: %d\n", ri.dsp_ver);
+	printf("\tMemory map: Mode %x\n", ri.map_mode);
+	printf("\tCPU in fast mode: %s\n", yes(ri.fastrom));
+	printf("\tRAM: %s\n", yes(ri.ram));
+	printf("\tBattery: %s\n\n", yes(ri.battery));
 }
 
 static bool map_memory(snes_mapper &map, stream_reader &smc, rom_info_t &ri)
@@ -291,6 +293,7 @@ static bool map_memory(snes_mapper &map, stream_reader &smc, rom_info_t &ri)
 	if (ri.map_mode == 0x20) {
 		fprintf(stderr, "-Mapping LoROM...\n");
 		map.map_rom(0x00, 0x7D, 0x8000, 0xFFFF, smc_off, rom_size - smc_off);
+		fprintf(stderr, "\n");
 		return 0;
 	}
 	
