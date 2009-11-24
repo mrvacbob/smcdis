@@ -37,12 +37,12 @@ public:
 	mapped_file(const char *file);
 	~mapped_file();
 	off_t size() {return fsize;}
-	void *request(off_t off, size_t size) {return (char*)data + off;}
+	uint8_t *request(off_t off, size_t size) {return data + off;}
 	
 private:
 	bool mmapped;
 	off_t fsize;
-	void *data;
+	uint8_t *data;
 };
 
 class stream_reader
@@ -74,7 +74,7 @@ protected:
 	}
 	
 	size_t buf_size;
-	void *buf;
+	uint8_t *buf;
 	size_t at;
 	unsigned char bit_off;
 public:
@@ -83,7 +83,7 @@ public:
 	size_t size() {return buf_size;}
 	void seek(fsize_t n) {at = n; bit_off=0;}
 	void skip(size_t s) {at += s;}
-	void *cur() {return (char*)buf + at;}
+	uint8_t *cur() {return buf + at;}
 	void skip_bits(size_t s) {unsigned tmp = bit_off+s; skip(tmp/8); bit_off = tmp % 8;}
 	size_t pos() {return at;}
 	
@@ -108,12 +108,12 @@ public:
 	ByteReadFunc(s64, int64_t);
 	ByteReadFunc(u64, uint64_t);
 	
-	void peek_bytes(char *dest, size_t s) {
+	void peek_bytes(void *dest, size_t s) {
 		assert_bytes(s);
 		memcpy(dest, cur(), s);
 	}
 	
-	void read_bytes(char *dest, size_t s) {
+	void read_bytes(void *dest, size_t s) {
 		peek_bytes(dest, s);
 		skip(s);
 	}

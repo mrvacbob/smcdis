@@ -55,10 +55,10 @@ static const char *yes(bool y)
 static size_t smc_header(stream_reader &smc) {
 	size_t fs = smc.size(), extrasize = fs % SMC_BLOCK_SIZE;
 	
-	fprintf(stderr, "-size %#x, %d 32KB blocks, %d 8KB pages\n", fs, fs/0x8000, fs/8192);
+	fprintf(stderr, "-size %#lx, %lu 32KB blocks, %lu 8KB pages\n", fs, fs/0x8000, fs/8192);
 	
 	if (extrasize == 0) {
-		fprintf(stderr, "-No copier header found (%d bytes left over).\n", extrasize);
+		fprintf(stderr, "-No copier header found (%lu bytes left over).\n", extrasize);
 	} else {
 		swc_header swc;
 		fig_header fig;
@@ -90,7 +90,7 @@ static size_t smc_header(stream_reader &smc) {
 			printf("8KB pages: %d (%s)\n", fig.size, (fig.size == fs/8192) ? "correct" : "incorrect");
 			printf("Multi-image: %s\n", yes(fig.multi));
 			printf("ROM type: %s\n", fig.hirom ? "HiROM" : "LoROM");
-			printf("Complicated code: %0.2X%0.2X\n", fig.ex1, fig.ex2);
+			printf("Complicated code: %.2X%.2X\n", fig.ex1, fig.ex2);
 		} else printf("Magic %#x unknown...\n", swc.magic);
 		
 		smc.seek(512);
@@ -204,7 +204,7 @@ static void hex_puts(char *n, size_t s, int w)
 		printf("\t");
 		for (size_t i = 0; i < w; i++) {
 			if (!s) break;
-			printf("%0.2hhX", *n++);
+			printf("%.2hhX", *n++);
 			if ((i != w) && i && (i % 2 == 0)) printf(" ");
 			s--;
 		}
@@ -300,10 +300,10 @@ static bool map_memory(snes_mapper &map, stream_reader &smc, rom_info_t &ri)
 
 static void print_one_vector(const char *name, snes_mapper &map, uint16_t v)
 {
-	printf("\t%s: %0.2X ", name, v);
+	printf("\t%s: %.2X ", name, v);
 	char *real = map.lookup(0, v);
 	
-	if (real) printf("(%#x)\n", real - map.base);
+	if (real) printf("(%#x)\n", unsigned(real - map.base));
 	else printf("(unmapped)\n");
 }
 

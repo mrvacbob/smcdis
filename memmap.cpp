@@ -16,7 +16,7 @@ void snes_mapper::map_rom(uint8_t bank_begin, uint8_t bank_end, uint16_t addr_be
 {
 	size_t r = 0;
 	
-	fprintf(stderr, "-Mapping %#x bytes\n", rom_size);
+	fprintf(stderr, "-Mapping %#lx bytes\n", rom_size);
 	for (int b = bank_begin; b <= bank_end; b++) {
 		map_item m = (map_item){makeaddr(b, addr_begin), makeaddr(b, addr_end), base + offset + r};
 		r += m.end - m.begin;
@@ -33,9 +33,9 @@ void snes_mapper::print()
 	for (i = map.begin(); i != map.end(); i++) {
 		map_item &m = *i;
 		
-		printf("$%0.2X:%0.4X - $%0.2X:%0.4X: %#x - %#x\n", m.begin >> 16, m.begin & 0xffff,
-														   m.end >> 16, m.end & 0xffff,
-														   m.rom - base, m.rom + (m.end - m.begin) - base);
+		printf("$%.2X:%.4X - $%.2X:%.4X: %#x - %#x\n", m.begin >> 16, m.begin & 0xffff,
+													   m.end >> 16, m.end & 0xffff,
+													   unsigned(m.rom - base), unsigned(m.rom + (m.end - m.begin) - base));
 	}
 }
 
