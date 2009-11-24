@@ -342,7 +342,6 @@ int main (int argc, char * const argv[]) {
 	dump_rom_header(rom_header);
 	dump_chip_list(rom_info);
 	
-    printf("bit test %d %d\n",smc.read_sbits(4), smc.read_bits(4));
 	smc.seek(0);
 	snes_mapper map((char*)smc.cur());
 	
