@@ -10,7 +10,7 @@
 #include "memmap.h"
 #include <stdio.h>
 
-static uint32_t makeaddr(uint8_t bank, uint16_t addr) {return bank << 16 | addr;}
+static uint32_t makeaddr(uint8_t bank, uint16_t addr) {return (bank << 16) | addr;}
 
 void snes_mapper::map_rom(uint8_t bank_begin, uint8_t bank_end, uint16_t addr_begin, uint16_t addr_end, size_t offset, size_t rom_size)
 {

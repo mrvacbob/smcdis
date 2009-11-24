@@ -26,7 +26,7 @@
 
 template<typename T> T bswap(T in) {
     T v = in;
-	if (sizeof(T) == 2) return (v << 8) & 0xff00 | (v >> 8) & 0xff;
+	if (sizeof(T) == 2) return ((v << 8) & 0xff00) | ((v >> 8) & 0xff);
 	else if (sizeof(T) == 4) return (v >> 24) | ((v >> 8) & 0xff00) | ((v << 8) & 0xff0000) | (v << 24);
 	return v;
 }
