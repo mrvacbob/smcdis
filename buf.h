@@ -3,7 +3,6 @@
  *  smcdis
  *
  *  Created by Alexander Strange on 12/20/07.
- *  Copyright 2007 __MyCompanyName__. All rights reserved.
  *
  */
 
