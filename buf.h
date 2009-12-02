@@ -13,6 +13,9 @@
 #include <unistd.h>
 #include <string.h>
 
+#undef BIG_ENDIAN
+#undef LITTLE_ENDIAN
+
 #ifdef __BIG_ENDIAN__
 #define NATIVE_ENDIAN BIG_ENDIAN
 #else
@@ -45,10 +48,10 @@ class stream_reader
 protected:
 	void assert_bytes(size_t s) {}
 	
-	typedef enum endian_t {
+	enum endian_t {
 		BIG_ENDIAN = 0,
 		LITTLE_ENDIAN
-	} endian_t;
+	};
 	
 	typedef size_t fsize_t; // no 64-bit seeking
 	
