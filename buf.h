@@ -19,10 +19,6 @@
 #define NATIVE_ENDIAN LITTLE_ENDIAN
 #endif
 
-#ifndef BIT_ENDIAN
-#define BIT_ENDIAN BIG_ENDIAN
-#endif
-
 template<typename T> T bswap(T in) {
     T v = in;
 	if (sizeof(T) == 2) return ((v << 8) & 0xff00) | ((v >> 8) & 0xff);
