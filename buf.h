@@ -88,7 +88,7 @@ public:
 	void seek(fsize_t n) {at = n; bit_off=0;}
 	void skip(size_t s) {at += s;}
 	uint8_t *cur() {return buf + at;}
-	void skip_bits(size_t s) {unsigned tmp = bit_off+s; skip(tmp/8); bit_off = tmp % 8;}
+	void skip_bits(size_t s) {size_t tmp = bit_off+s; skip(tmp/8); bit_off = tmp % 8;}
 	size_t pos() {return at;}
 	
 #define ReadPeekFunc(name, type, param, endian) \
