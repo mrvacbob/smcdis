@@ -44,9 +44,9 @@ public:
 	uint8_t *request(off_t off, size_t size) {return data + off;}
 	
 private:
-	bool mmapped;
-	off_t fsize;
 	uint8_t *data;
+	off_t fsize;
+	bool mmapped;
 };
 
 class stream_reader
@@ -77,10 +77,10 @@ protected:
 		return v;
 	}
 	
-	size_t buf_size;
 	uint8_t *buf;
 	size_t at;
 	unsigned char bit_off;
+	size_t buf_size;
 public:
 	stream_reader(mapped_file &rf) {buf_size = rf.size(); buf = rf.request(0, buf_size); at = bit_off = 0;}
 	~stream_reader() {}
