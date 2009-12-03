@@ -155,6 +155,11 @@ static const char *reg(instruction_def &i)
 	}
 }
 
+static void print_insn(instruction &i)
+{
+	printf("\t%s\n", opcode_names[i.def->name]);
+}
+
 #define a(n) for (int i = 0; i < n; i++) {param = (param << 8) | *mem++; isize++;}
 #define a8() a(1)
 #define a16() a(2)
@@ -204,6 +209,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	
 	instruction i = (instruction){&insn, param, isize};
 	
+	print_insn(i);
 	update_state(i, s);
 	return i;
 }
