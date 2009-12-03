@@ -30,7 +30,7 @@ template<typename T> T bswap(T v) {
 	else if (sizeof(T) == 8) return bswap(uint32_t((uint64_t)v >> 32)) | ((uint64_t)bswap(uint32_t(v)) << 32);
 #else
 	else if (sizeof(T) == 4) return __builtin_bswap32(v);
-	else if (sizeof(T) == 8) return __builtin_bswap64(u);
+	else if (sizeof(T) == 8) return __builtin_bswap64(v);
 #endif
 	return v;
 }
