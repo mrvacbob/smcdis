@@ -22,10 +22,16 @@
 #define NATIVE_ENDIAN LITTLE_ENDIAN
 #endif
 
-template<typename T> T bswap(T in) {
-    T v = in;
-	if (sizeof(T) == 2) return ((v << 8) & 0xff00) | ((v >> 8) & 0xff);
-	else if (sizeof(T) == 4) return (v >> 24) | ((v >> 8) & 0xff00) | ((v << 8) & 0xff0000) | (v << 24);
+template<typename T> T bswap(T v) {
+    uint32_t u = v;
+	if (sizeof(T) == 2) return (u << 8) | (u >> 8);
+#ifndef __GNUC__
+	else if (sizeof(T) == 4) return (u >> 24) | ((u >> 8) & 0xff00) | ((u << 8) & 0xff0000) | (u << 24);
+	else if (sizeof(T) == 8) return bswap(uint32_t((uint64_t)v >> 32)) | ((uint64_t)bswap(uint32_t(v)) << 32);
+#else
+	else if (sizeof(T) == 4) return __builtin_bswap32(v);
+	else if (sizeof(T) == 8) return __builtin_bswap64(u);
+#endif
 	return v;
 }
 
