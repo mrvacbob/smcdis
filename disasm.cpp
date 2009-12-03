@@ -136,10 +136,6 @@ static void update_state(instruction &i, cpu_state &s)
 	s.pc += i.size;
 }
 
-#define advance_pc(x) s.pc += x;
-#define x_16() (!s.emu && ((s.status & 0x10) == 0))
-#define a_16() (!s.emu && ((s.status & 0x20) == 0))
-
 static const char *reg(instruction_def &i)
 {
 	switch(i.regs)
