@@ -288,7 +288,7 @@ static void dump_chip_list(rom_info_t &ri)
 	printf("\tBattery: %s\n\n", yes(ri.battery));
 }
 
-static bool map_memory(snes_mapper &map, stream_reader &smc, rom_info_t &ri)
+static bool map_memory(snes_mapper &map, rom_info_t &ri)
 {	
 	if (ri.map_mode == 0x20) {
 		fprintf(stderr, "-Mapping LoROM...\n");
@@ -345,7 +345,7 @@ int main (int argc, char * const argv[]) {
 	smc.seek(0);
 	snes_mapper map(smc.cur());
 	
-	if (map_memory(map, smc, rom_info) == 0) {
+	if (map_memory(map, rom_info) == 0) {
 		print_vectors(map, rom_header);
 		printf("\n");
 		disassemble(map, rom_header);
