@@ -129,7 +129,7 @@ static void update_state(instruction &i, cpu_state &s)
 		case I_BRL:
 		case I_JMP:
 		case I_JSR:
-			printf("\t;End of the function!\n");
+			printf("\t; End of the function!\n");
 			exit(0);
 	}
 }
