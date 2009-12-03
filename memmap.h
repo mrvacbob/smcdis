@@ -17,7 +17,7 @@ using std::list;
 struct map_item
 {
 	uint32_t begin, end;
-	uint8_t *rom;
+	uint32_t rom_off;
 };
 
 class snes_mapper
