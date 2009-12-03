@@ -304,7 +304,7 @@ static bool map_memory(snes_mapper &map, stream_reader &smc, rom_info_t &ri)
 static void print_one_vector(const char *name, snes_mapper &map, uint16_t v)
 {
 	printf("\t%s: %.2X ", name, v);
-	char *real = map.lookup(0, v);
+	uint8_t *real = map.lookup(0, v);
 	
 	if (real) printf("(%#x)\n", unsigned(real - map.base));
 	else printf("(unmapped)\n");
@@ -343,7 +343,7 @@ int main (int argc, char * const argv[]) {
 	dump_chip_list(rom_info);
 	
 	smc.seek(0);
-	snes_mapper map((char*)smc.cur());
+	snes_mapper map(smc.cur());
 	
 	if (map_memory(map, smc, rom_info) == 0) {
 		print_vectors(map, rom_header);

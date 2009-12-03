@@ -38,7 +38,7 @@ void snes_mapper::print()
 	}
 }
 
-char *snes_mapper::lookup(uint32_t a)
+uint8_t *snes_mapper::lookup(uint32_t a)
 {
 	list<map_item>::iterator i;
 	
@@ -52,7 +52,7 @@ char *snes_mapper::lookup(uint32_t a)
 	return NULL;
 }
 
-char *snes_mapper::lookup(uint8_t bank, uint16_t addr)
+uint8_t *snes_mapper::lookup(uint8_t bank, uint16_t addr)
 {
 	return lookup(makeaddr(bank, addr));
 }
