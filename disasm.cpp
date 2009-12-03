@@ -54,7 +54,7 @@ typedef enum instruction_name
 	I_TXA, I_TXS, I_TXY, I_TYA, I_TYX, I_WAI, I_WDM, I_XBA, I_XCE
 } instruction_name;
 
-static const char *opcode_names[] = 
+static const char opcode_names[][4] = 
 {
 	"ADC", "AND", "ASL", "BCC", "BCS", "BEQ", "BIT", "BMI", "BNE",
 	"BPL", "BRA", "BRK", "BRL", "BVC", "BVS", "CLC", "CLD", "CLI",
