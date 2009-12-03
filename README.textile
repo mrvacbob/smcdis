@@ -35,3 +35,15 @@ The abstract interpreter doesn't have to be very good (unless games
 switch between 8- and 16-bit more than I think), and probably doesn't even
 have to bother with known-1/known-0 dataflow. That can be saved for the
 SNES decompiler.
+
+
+=======================================
+
+Documentation
+
+=======================================
+
+See doc/.
+
+A particularly useful file that was too large to include can be found
+at http://www.romhacking.net/docs/226/.
