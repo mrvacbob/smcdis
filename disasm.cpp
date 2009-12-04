@@ -76,15 +76,15 @@ enum
 	Reg_Y = 1<<2,
 	Reg_D = 1<<3,
 	Reg_S = 1<<4,
-	Reg_PBR = 1<<5,
-	Reg_DBR = 1<<6,
+	Reg_PBR = 1<<5, /// Program Bank Register
+	Reg_DBR = 1<<6, /// Data Bank Register
 	Reg_P = 1<<7
 };
 
 struct cpu_state
 {
 	unsigned status;
-	uint8_t pb;
+	uint8_t pb;  // program bank
 	uint16_t pc;
 	bool emu;
 };
