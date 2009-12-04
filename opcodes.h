@@ -1,4 +1,5 @@
-instruction_def opcodes[] = {
+static const instruction_def opcodes[] =
+{
 	{I_BRK, Interrupt},
 	{I_ORA, DPIndexedIndirect, Reg_X},
 	{I_COP, Interrupt},

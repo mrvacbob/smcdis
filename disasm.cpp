@@ -100,7 +100,7 @@ struct instruction_def
 
 struct instruction
 {
-	instruction_def *def;
+	const instruction_def *def;
 	unsigned param;
 	uint8_t size;
 };
@@ -168,7 +168,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	uint8_t *mem = (uint8_t*)map.lookup(s.pb, s.pc);
 	uint8_t op = *mem++;
 	int param = 0, isize = 1;
-	instruction_def &insn = opcodes[op];
+	const instruction_def &insn = opcodes[op];
 	
 	switch (insn.args) {
 		case None:
