@@ -87,6 +87,8 @@ struct cpu_state
 	uint8_t pb;  // program bank
 	uint16_t pc;
 	bool emu;
+
+	cpu_state(rom_header_t &rh) : status(0x34), pb(0), pc(rh.emu_exc.main), emu(true) {}
 };
 
 struct instruction_def
@@ -212,7 +214,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 
 extern void disassemble(snes_mapper &map, rom_header_t &rh)
 {
-	cpu_state s = (cpu_state){0x34, 0, rh.emu_exc.main, true};
+	cpu_state s(rh);
 	fprintf(stderr, "-Disassembling from entry point\n");
 	for (int i = 0; i < 128; i++) disasm_one_insn(map, s);
 	fprintf(stderr, "-That's all for now\n");
