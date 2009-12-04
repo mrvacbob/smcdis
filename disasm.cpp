@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef enum addressing_mode
+enum addressing_mode
 {
 	None,
 	Interrupt,
@@ -37,9 +37,9 @@ typedef enum addressing_mode
 	StackRelativeIndirectIndexed,
 	BlockMove,
 	WDM
-} addressing_mode;
+};
 
-typedef enum instruction_name
+enum instruction_name
 {
 	I_ADC, I_AND, I_ASL, I_BCC, I_BCS, I_BEQ, I_BIT, I_BMI, I_BNE,
 	I_BPL, I_BRA, I_BRK, I_BRL, I_BVC, I_BVS, I_CLC, I_CLD, I_CLI,
@@ -52,7 +52,7 @@ typedef enum instruction_name
 	I_STX, I_STY, I_STP, I_STZ, I_SWA, I_TAD, I_TAS, I_TAX, I_TAY,
 	I_TCB, I_TCD, I_TCS, I_TDC, I_TRB, I_TSA, I_TSB, I_TSC, I_TSX,
 	I_TXA, I_TXS, I_TXY, I_TYA, I_TYX, I_WAI, I_WDM, I_XBA, I_XCE
-} instruction_name;
+};
 
 static const char opcode_names[][4] = 
 {
