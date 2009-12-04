@@ -93,8 +93,8 @@ struct cpu_state
 
 struct instruction_def
 {
-	instruction_name name;
-	addressing_mode args;
+	uint8_t name;
+	uint8_t args;
 	uint8_t regs;
 };
 
