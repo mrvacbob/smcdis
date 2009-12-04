@@ -93,7 +93,7 @@ struct instruction_def
 {
 	instruction_name name;
 	addressing_mode args;
-	unsigned regs;
+	uint8_t regs;
 };
 
 struct instruction
