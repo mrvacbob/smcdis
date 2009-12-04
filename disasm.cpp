@@ -100,7 +100,7 @@ struct instruction
 {
 	instruction_def *def;
 	unsigned param;
-	unsigned size;
+	uint8_t size;
 };
 
 #include "opcodes.h"
