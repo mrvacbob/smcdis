@@ -175,9 +175,9 @@ static void update_state(instruction &i, cpu_state &s)
 	s.pc += i.size;
 }
 
-static const char *reg(instruction_def &i)
+static const char *reg(const instruction_def *i)
 {
-	switch(i.regs)
+	switch(i->regs)
 	{
 		case Reg_A:
 			return "A";
@@ -190,9 +190,81 @@ static const char *reg(instruction_def &i)
 	}
 }
 
-static void print_insn(instruction &i)
+static void print_insn(instruction &i, uint8_t *mem)
 {
-	printf("\t%s\n", opcode_names[i.def->name]);
+	printf("\t%s\t", opcode_names[i.def->name]);
+
+	switch ((addressing_mode)i.def->args) {
+		case None:
+			break;
+		case Immediate:
+		case Interrupt:
+			printf("#$%X", i.param);
+			break;
+		case Absolute:
+		case AbsLong:
+			printf("$%X", i.param);
+			break;
+		case AbsIndirect:
+			printf("($%X)", i.param);
+			break;
+		case AbsIndexed:
+		case AbsLongIndexed:
+			printf("$%X,%s", i.param, reg(i.def));
+			break;
+		case AbsIndexedIndirect:
+			printf("($%X,%s)", i.param, reg(i.def));
+			break;
+		case AbsIndirectLong:
+			printf("[$%X]", i.param);
+			break;
+		case DirectPage:
+			printf("$%X ;d", i.param);
+			break;
+		case DPIndexed:
+			printf("$%X,%s ;d", i.param, reg(i.def));
+			break;
+		case DPIndexedIndirect:
+			printf("($%X,%s) ;d", i.param, reg(i.def));
+			break;
+		case DPIndirect:
+			printf("($%X) ;d", i.param);
+			break;
+		case DPIndirectIndexed:
+			printf("($%X),%s ;d", i.param, reg(i.def));
+			break;
+		case DPIndirectLong:
+			printf("[$%X] ;d", i.param);
+			break;
+		case DPIndirectLongIndexed:
+			printf("[$%X],%s ;d", i.param, reg(i.def));
+			break;
+		case PCRelative:
+		case PCRelativeLong:
+			printf("$%X ;pc", i.param);
+			break;
+		case StackRelative:
+			printf("$%X ;s", i.param);
+			break;
+		case StackRelativeIndirectIndexed:
+			printf("(#%X),%s ;", i.param, reg(i.def));
+			break;
+		case BlockMove:
+			printf("$%X", i.param);
+			break;
+		case StackPush:
+		case StackPull:
+		case WDM:
+			break;
+	}
+
+	printf("\t; ");
+
+	for (size_t n = 0; n < i.size; n++) {
+		printf("%.2X ", mem[n]);
+	}
+
+	printf("\n");
 }
 
 #define a(n) for (int i = 0; i < n; i++) {param = (param << 8) | *mem++; isize++;}
@@ -209,10 +281,10 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	
 	switch (insn.args) {
 		case None:
-		case Interrupt:
 		case StackPull:
 		case StackPush:
 			break;
+		case Interrupt:
 		case DirectPage:
 		case DPIndirectIndexed:
 		case DPIndirectLongIndexed:
@@ -244,7 +316,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	
 	instruction i = (instruction){&insn, param, isize};
 	
-	print_insn(i);
+	print_insn(i, mem-isize);
 	update_state(i, s);
 	return i;
 }
