@@ -11,6 +11,6 @@
 #include "smc.h"
 #include "memmap.h"
 
-extern void disassemble(snes_mapper &map, rom_header_t &rh);
+extern void disassemble(snes_mapper &map, snes_rom_header &rh);
 
 #endif

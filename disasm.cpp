@@ -118,7 +118,7 @@ struct cpu_state
 	uint8_t    pb;     /// Program bank
 	uint16_t   pc;
 
-	cpu_state(rom_header_t &rh) : pb(0), pc(rh.emu_exc.main) {}
+	cpu_state(snes_rom_header &rh) : pb(0), pc(rh.emu_exc.main) {}
 };
 
 struct instruction_def
@@ -321,7 +321,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	return i;
 }
 
-void disassemble(snes_mapper &map, rom_header_t &rh)
+void disassemble(snes_mapper &map, snes_rom_header &rh)
 {
 	cpu_state s(rh);
 

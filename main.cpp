@@ -12,9 +12,9 @@
 
 static const unsigned header_offsets[] = {0x7fc0, 0xffc0, 0x40ffc0};
 static size_t smc_off=0, header_off=0, rom_size;
-static rom_header_t rom_header;
-static rom_info_t rom_info = {(rom_type)0};
-static void dump_rom_header(rom_header_t &h);
+static snes_rom_header rom_header;
+static snes_rom_info rom_info = {(rom_type)0};
+static void dump_rom_header(snes_rom_header &h);
 
 static swc_header read_swc_header(stream_reader &smc)
 {
@@ -99,9 +99,9 @@ static size_t smc_header(stream_reader &smc) {
 	return extrasize;
 }
 
-static snes_interrupt_t read_exception_table(stream_reader &smc)
+static snes_interrupt read_exception_table(stream_reader &smc)
 {
-	snes_interrupt_t i;
+	snes_interrupt i;
 	
 	i.cop = smc.read_u16le();
 	i.brk = smc.read_u16le();
@@ -113,7 +113,7 @@ static snes_interrupt_t read_exception_table(stream_reader &smc)
 	return i;
 }
 
-static void read_rom_header_at(stream_reader &smc, size_t at, rom_header_t *h)
+static void read_rom_header_at(stream_reader &smc, size_t at, snes_rom_header *h)
 {
 	char maker[2];
 	smc.seek(at - 16);
@@ -142,7 +142,7 @@ static void read_rom_header_at(stream_reader &smc, size_t at, rom_header_t *h)
 	h->emu_exc = read_exception_table(smc);
 }
 
-static int rom_header_score(rom_header_t &h, rom_type type)
+static int rom_header_score(snes_rom_header &h, rom_type type)
 {
 	int s = 0;
 	
@@ -156,9 +156,9 @@ static int rom_header_score(rom_header_t &h, rom_type type)
 	return s;
 }
 
-static rom_header_t find_rom_header(stream_reader &smc, size_t *off)
+static snes_rom_header find_rom_header(stream_reader &smc, size_t *off)
 {
-	rom_header_t headers[3];
+	snes_rom_header headers[3];
 	int scores[3] = {0};
 	
 	for (size_t i = 0; i < sizeof(header_offsets) / sizeof(unsigned); i++) {
@@ -196,7 +196,7 @@ static void clean_puts(char *n, size_t s)
 	putchar('\n');
 }
 
-static void dump_rom_header(rom_header_t &h)
+static void dump_rom_header(snes_rom_header &h)
 {
 	if (h.company2 != 0x33) printf("This is a compact copied ROM header. (missing first 16 bytes)\n");
 	printf("This is a %s%s.\n\n", rom_info.interleaved ? "interleaved " : "", get_rom_type_name(rom_info));
@@ -225,7 +225,7 @@ static void dump_rom_header(rom_header_t &h)
 		   h.version, h.ichecksum, h.checksum, (h.ichecksum + h.checksum == 0xFFFF) ? "" : "(!)");
 }
 
-static void set_ram_type(uint8_t type, rom_info_t &ri)
+static void set_ram_type(uint8_t type, snes_rom_info &ri)
 {
 	switch (type) {
 		case 2:
@@ -235,7 +235,7 @@ static void set_ram_type(uint8_t type, rom_info_t &ri)
 	}
 }
 
-static void find_game_chips(rom_header_t &rh, rom_info_t &ri)
+static void find_game_chips(snes_rom_header &rh, snes_rom_info &ri)
 {
 	//if (rh.company == 0x33) ri.type = ri.type ? BSCHiROM : BSCLoROM;
 	ri.hirom = rh.map_mode % 2;
@@ -258,7 +258,7 @@ static void find_game_chips(rom_header_t &rh, rom_info_t &ri)
 	ri.eram_kbit = 1 << (rh.expansion_ram+3);
 }
 
-static void dump_chip_list(rom_info_t &ri)
+static void dump_chip_list(snes_rom_info &ri)
 {
 	const char *coproc_names[] = {"None", "DSP", "Super FX", "OBC1", "SA-1"};
 	printf("Hardware features:\n");
@@ -270,7 +270,7 @@ static void dump_chip_list(rom_info_t &ri)
 	printf("\tBattery: %s\n\n", yes(ri.battery));
 }
 
-static bool map_memory(snes_mapper &map, rom_info_t &ri)
+static bool map_memory(snes_mapper &map, snes_rom_info &ri)
 {	
 	if (ri.map_mode == 0x20) {
 		fprintf(stderr, "-Mapping LoROM...\n");
@@ -292,9 +292,9 @@ static void print_one_vector(const char *name, snes_mapper &map, uint16_t v)
 	else printf("(unmapped)\n");
 }
 
-static void print_interrupt_table(snes_mapper &map, rom_header_t &rh, bool emu)
+static void print_interrupt_table(snes_mapper &map, snes_rom_header &rh, bool emu)
 {
-	snes_interrupt_t &i = emu ? rh.emu_exc : rh.norm_exc;
+	snes_interrupt &i = emu ? rh.emu_exc : rh.norm_exc;
 	
 	print_one_vector("COP", map, i.cop);
 	if (!emu) print_one_vector("BRK", map, i.brk);
@@ -304,7 +304,7 @@ static void print_interrupt_table(snes_mapper &map, rom_header_t &rh, bool emu)
 	print_one_vector(emu ? "IRQ/BRK" : "IRQ", map, i.irq);
 }
 
-static void print_vectors(snes_mapper &map, rom_header_t &rh)
+static void print_vectors(snes_mapper &map, snes_rom_header &rh)
 {
 	printf("Normal-mode exception handlers:\n");
 	print_interrupt_table(map, rh, 0);

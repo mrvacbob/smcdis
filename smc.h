@@ -8,27 +8,29 @@
 
 #ifndef __SMC_H__
 #define __SMC_H__
+
 #include <stdint.h>
 
-typedef enum rom_type {
+enum rom_type {
 	LoROM = 0,
 	HiROM,
 	ExLoROM,
 	ExHiROM,
 	BSCLoROM,
 	BSCHiROM
-} rom_type;
+};
 
-typedef enum coprocessor_type {
+enum coprocessor_type {
 	DSP = 1,
 	SuperFX,
 	OBC1,
 	SA1,
 	UnknownCPU,
 	Custom = 0xF
-} coprocessor_type;
+};
 
-struct snes_interrupt_t {
+struct snes_interrupt
+{
 	uint16_t cop;
 	uint16_t brk;
 	uint16_t abort;
@@ -37,7 +39,8 @@ struct snes_interrupt_t {
 	uint16_t irq;
 };
 
-struct rom_header_t {
+struct snes_rom_header
+{
 	uint8_t company1;
 	char game_code[4];
 	char zero_fill[7];
@@ -54,10 +57,11 @@ struct rom_header_t {
 	uint8_t version;
 	uint16_t ichecksum;
 	uint16_t checksum; // 0xFFDE
-	snes_interrupt_t norm_exc, emu_exc;
+	snes_interrupt norm_exc, emu_exc;
 };
 
-struct rom_info_t {
+struct snes_rom_info
+{
 	rom_type type;
 	bool interleaved;
 	coprocessor_type coprocessor;
@@ -93,4 +97,5 @@ struct fig_header
 	uint8_t ex1; // 0xFD or 0x47 or 0x77
 	uint8_t ex2; // 0x82 or 0x83
 };
+
 #endif

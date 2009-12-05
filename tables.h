@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include "smc.h"
 
-extern const char *get_rom_company_name(rom_header_t &h);
-extern const char *get_rom_region_name(rom_header_t &h);
-extern const char *get_rom_type_name(rom_info_t &h);
+extern const char *get_rom_company_name(snes_rom_header &h);
+extern const char *get_rom_region_name(snes_rom_header &h);
+extern const char *get_rom_type_name(snes_rom_info &h);
 #endif

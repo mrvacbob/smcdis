@@ -47,7 +47,7 @@ static const char *type_names[] = {
 	"LoROM", "HiROM", "Extended LoROM", "Extended HiROM", "BS-C LoROM", "BS-C HiROM"
 };
 
-const char *get_rom_company_name(rom_header_t &h)
+const char *get_rom_company_name(snes_rom_header &h)
 {
 	uint8_t c = h.company2;
 	if (c == 0x33) c = h.company1;
@@ -57,13 +57,13 @@ const char *get_rom_company_name(rom_header_t &h)
 	return *n ? n : "Unknown";
 }
 
-const char *get_rom_region_name(rom_header_t &h)
+const char *get_rom_region_name(snes_rom_header &h)
 {
 	if (h.region > (sizeof(region_names) / sizeof(const char *)) || h.region == 5) return "Unknown";
 	return region_names[h.region];
 }
 
-const char *get_rom_type_name(rom_info_t &h)
+const char *get_rom_type_name(snes_rom_info &h)
 {
 	if (h.type > (sizeof(type_names) / sizeof(const char *))) return "Unknown ROM";
 	return type_names[h.type];
