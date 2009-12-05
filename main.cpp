@@ -176,13 +176,12 @@ static rom_header_t find_rom_header(stream_reader &smc, size_t *off)
 		fprintf(stderr, "-Score: %d\n", scores[i]);
 	}
 	
-	fprintf(stderr, "\n");
-	
 	int hnum = 0;
 	
 	for (int i = 0; i < 3; i++) if (scores[i] > scores[hnum]) hnum = i;
 	
 	*off = header_offsets[hnum] + smc_off;
+	fprintf(stderr, "-Using header at %#x\n\n", (unsigned)*off);
 	rom_info.type = (rom_type)hnum;
 	return headers[hnum];
 }
