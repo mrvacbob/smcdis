@@ -196,23 +196,6 @@ static void clean_puts(char *n, size_t s)
 	putchar('\n');
 }
 
-static void hex_puts(char *n, size_t s, size_t w)
-{
-	size_t lines = s / w;
-	
-	for (size_t l = 0; l < lines; l++) {
-		if (!s) break;
-		printf("\t");
-		for (size_t i = 0; i < w; i++) {
-			if (!s) break;
-			printf("%.2hhX", *n++);
-			if ((i != w) && i && (i % 2 == 0)) printf(" ");
-			s--;
-		}
-		printf("\n");
-	}
-}
-
 static void dump_rom_header(rom_header_t &h)
 {
 	if (h.company2 != 0x33) printf("This is a compact copied ROM header. (missing first 16 bytes)\n");
