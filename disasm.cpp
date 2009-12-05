@@ -167,6 +167,9 @@ static void update_state(instruction &i, cpu_state &s)
 		case I_WAI:
 			printf("\t; End of the function!\n");
 			exit(0);
+		case I_PLP:
+			printf("\t; Unable to track PLP\n");
+			exit(0);
 	}
 	
 	s.pc += i.size;
