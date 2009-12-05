@@ -212,7 +212,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 	return i;
 }
 
-extern void disassemble(snes_mapper &map, rom_header_t &rh)
+void disassemble(snes_mapper &map, rom_header_t &rh)
 {
 	cpu_state s(rh);
 	fprintf(stderr, "-Disassembling from entry point\n");
