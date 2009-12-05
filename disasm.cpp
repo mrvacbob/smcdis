@@ -159,9 +159,12 @@ static void update_state(instruction &i, cpu_state &s)
 			break;
 		case I_RTI:
 		case I_RTS:
+		case I_BRK:
 		case I_BRL:
 		case I_JMP:
 		case I_JSR:
+		case I_STP:
+		case I_WAI:
 			printf("\t; End of the function!\n");
 			exit(0);
 	}
