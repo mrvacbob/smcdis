@@ -9,6 +9,7 @@
 #include "disasm.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 enum addressing_mode
 {
@@ -81,14 +82,43 @@ enum
 	Reg_P = 1<<7
 };
 
+union cpu_status
+{
+	uint16_t flags;
+	struct {
+		bool c:1; /// Carry flag
+		bool z:1; /// Zero flag
+		bool i:1; /// IRQ disable
+		bool d:1; /// Decimal mode
+		bool x:1; /// Index select 8-bit/16-bit
+		bool m:1; /// Accumulator select 8-bit/16-bit
+		bool v:1; /// Overflow flag
+		bool n:1; /// Negative flag
+		bool e:1; /// Emulation (always 1)
+	};            /// Native mode flags
+
+	struct {
+		bool c:1; /// Carry flag
+		bool z:1; /// Zero flag
+		bool i:1; /// IRQ disable
+		bool d:1; /// Decimal mode
+		bool b:1; /// BRK caused last interrupt
+		bool _:1; /// Unused
+		bool v:1; /// Overflow flag
+		bool n:1; /// Negative flag
+		bool e:1; /// Emulation (always 0)
+	} emu;        /// Emulation mode flags
+
+	cpu_status() : flags(0), e(1), m(1), x(1), i(1) {}
+};
+
 struct cpu_state
 {
-	unsigned status;
-	uint8_t pb;     /// Program bank
-	uint16_t pc;
-	bool emu;
+	cpu_status p;
+	uint8_t    pb;     /// Program bank
+	uint16_t   pc;
 
-	cpu_state(rom_header_t &rh) : status(0x34), pb(0), pc(rh.emu_exc.main), emu(true) {}
+	cpu_state(rom_header_t &rh) : pb(0), pc(rh.emu_exc.main) {}
 };
 
 struct instruction_def
@@ -109,22 +139,23 @@ struct instruction
 
 static void update_state(instruction &i, cpu_state &s)
 {
+	bool tmp;
 	switch (i.def->name) {
 		case I_CLC:
-			s.status &= ~1;
+			s.p.c = 0;
 			break;
 		case I_REP:
-			s.status &= ~i.param;
+			tmp = s.p.e;
+			s.p.flags &= ~i.param;
+			s.p.e = tmp;
 			break;
 		case I_SEP:
-			s.status |= i.param;
+			s.p.flags |= i.param;
 			break;
 		case I_XCE:
-		{
-			bool tmp = s.emu;
-			s.emu = s.status & 1;
-			s.status = (s.status & ~1) | tmp;
-		}
+			tmp = s.p.e;
+			s.p.e = s.p.c;
+			s.p.c = tmp;
 			break;
 		case I_RTI:
 		case I_RTS:
@@ -201,7 +232,7 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 			a24();
 			break;
 		case Immediate:
-			if (s.emu) {a8();} else {a16();}
+			if (s.p.e) {a8();} else {a16();}
 			break;
 	}
 	
@@ -215,6 +246,9 @@ static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
 void disassemble(snes_mapper &map, rom_header_t &rh)
 {
 	cpu_state s(rh);
+
+	assert(s.p.flags == 0x134);
+
 	fprintf(stderr, "-Disassembling from entry point\n");
 	for (int i = 0; i < 128; i++) disasm_one_insn(map, s);
 	fprintf(stderr, "-That's all for now\n");
