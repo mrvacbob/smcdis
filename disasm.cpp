@@ -109,7 +109,7 @@ union cpu_status
 		bool e:1; /// Emulation (always 0)
 	} emu;        /// Emulation mode flags
 
-	cpu_status() : flags(0), e(1), m(1), x(1), i(1) {}
+	cpu_status() : c(0), z(0), i(1), d(0), x(1), m(1), v(0), n(0), e(1) {}
 };
 
 struct cpu_state
