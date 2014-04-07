@@ -7,9 +7,14 @@
  */
 
 #include "disasm.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+
+#include <queue>
+#include <set>
+#include <vector>
 
 enum addressing_mode
 {
@@ -109,16 +114,63 @@ union cpu_status
 		bool e:1; /// Emulation (always 0)
 	} emu;        /// Emulation mode flags
 
-	cpu_status() : c(0), z(0), i(1), d(0), x(1), m(1), v(0), n(0), e(1) {}
+    cpu_status() : flags(0) {}
+    cpu_status(const cpu_status &p) : flags(p.flags) {}
+};
+
+// Which bits of cpu state have known values
+struct cpu_status_known
+{
+    union {
+        uint16_t flags;
+        
+        struct {
+            bool c:1; /// Carry flag
+            bool z:1; /// Zero flag
+            bool i:1; /// IRQ disable
+            bool d:1; /// Decimal mode
+            bool x:1; /// Index select 8-bit/16-bit
+            bool m:1; /// Accumulator select 8-bit/16-bit
+            bool v:1; /// Overflow flag
+            bool n:1; /// Negative flag
+            bool e:1; /// Emulation
+        };
+    };
+    
+    struct {
+        bool pb:1; // Program bank register
+        bool pc:1; // Program counter
+    };
+    
+    cpu_status_known() : flags(0), pb(0), pc(0) {}
+    cpu_status_known(const cpu_status_known &p_k) : flags(p_k.flags), pb(p_k.pb), pc(p_k.pc) {}
 };
 
 struct cpu_state
 {
 	cpu_status p;
+    cpu_status_known p_k;
+    
 	uint8_t    pb;     /// Program bank
 	uint16_t   pc;
+    
+    // TODO: regs
+    
+    uint16_t   block_size; // Count since this basic block started
 
-	cpu_state(snes_rom_header &rh) : pb(0), pc(rh.emu_exc.main) {}
+    cpu_state() : pb(0), pc(0), block_size(0) {}
+    cpu_state(const cpu_state &s) : p(s.p), p_k(s.p_k), pb(s.pb), pc(s.pc), block_size(s.block_size) {}
+};
+
+struct disassembler
+{
+    // List of CPU states left to scan
+    std::queue<cpu_state> worklist;
+    
+    // List of addresses of known basic blocks
+    std::set<uint16_t> visited_addresses;
+    
+    std::vector<cpu_state> basic_blocks;
 };
 
 struct instruction_def
@@ -135,44 +187,155 @@ struct instruction
 	uint8_t size;
 };
 
+static void print_insn(instruction &i, uint8_t *mem);
+
 #include "opcodes.h"
 
-static void update_state(instruction &i, cpu_state &s)
+static snes_mapper *map;
+static snes_rom_header *rh;
+static disassembler *d;
+
+
+
+static instruction disasm_one_insn(cpu_state &s)
 {
-	bool tmp;
-	switch (i.def->name) {
-		case I_CLC:
-			s.p.c = 0;
+#define read_byte(off) (*(uint8_t*)map->lookup(s.pb, s.pc + (off)))
+#define a(n)  for (int i = 0; i < n; i++) {param = (param << 8) | read_byte(i+1); isize++;}
+#define a8()  a(1)
+#define a16() a(2)
+#define a24() a(3)
+    
+	uint8_t op = read_byte(0);
+	int     param = 0, isize = 1;
+	const   instruction_def &insn = opcodes[op];
+	
+	switch (insn.args) {
+		case None:
+		case StackPull:
+		case StackPush:
 			break;
-		case I_REP:
-			tmp = s.p.e;
-			s.p.flags &= ~i.param;
-			s.p.e = tmp;
+		case Interrupt:
+		case DirectPage:
+		case DPIndirectIndexed:
+		case DPIndirectLongIndexed:
+		case DPIndexedIndirect:
+		case DPIndexed:
+		case DPIndirect:
+		case DPIndirectLong:
+		case PCRelative:
+		case StackRelative:
+		case StackRelativeIndirectIndexed:
+			a8();
 			break;
-		case I_SEP:
-			s.p.flags |= i.param;
+		case Absolute:
+		case AbsIndexed:
+		case AbsIndirect:
+		case AbsIndexedIndirect:
+		case PCRelativeLong:
+		case BlockMove:
+			a16();
 			break;
-		case I_XCE:
-			tmp = s.p.e;
-			s.p.e = s.p.c;
-			s.p.c = tmp;
+		case AbsLong:
+		case AbsLongIndexed:
+			a24();
 			break;
-		case I_RTI:
-		case I_RTS:
-		case I_BRK:
-		case I_BRL:
-		case I_JMP:
-		case I_JSR:
-		case I_STP:
-		case I_WAI:
-			printf("\t; End of the function!\n");
-			exit(0);
-		case I_PLP:
-			printf("\t; Unable to track PLP\n");
-			exit(0);
+		case Immediate:
+			if (s.p.e) {a8();} else {a16();}
+			break;
 	}
 	
-	s.pc += i.size;
+	instruction i = (instruction){&insn, param, isize};
+	return i;
+    
+#undef a24
+#undef a16
+#undef a8
+#undef read_byte
+}
+
+static void record_jump(cpu_state &s, uint16_t dest)
+{
+    cpu_state sj(s);
+    
+    sj.pc = dest;
+    d->worklist.push(sj);
+}
+
+static void scan_basic_block(cpu_state &to_scan)
+{
+    bool block_ended = false;
+    bool btmp;
+    uint16_t stmp;
+
+    cpu_state si(to_scan); // Initial state (to have metadata filled in)
+    cpu_state s(si); // Iterating state
+    
+    s.block_size = 0;
+    
+#define check_e() if (s.p_k.e == false) {block_ended = true; break;}
+    do {
+        instruction i = disasm_one_insn(s);
+        
+        print_insn(i, (uint8_t*)map->lookup(s.pb, s.pc));
+        
+        s.block_size++;
+
+        switch (i.def->name) {
+            case I_CLC:
+                s.p.c = 0; s.p_k.c = 1;
+                break;
+            case I_REP:
+                btmp = s.p.e;
+                s.p.flags &= ~i.param;
+                s.p_k.flags &= ~i.param;
+                s.p.e = btmp;
+                break;
+            case I_SEI:
+                s.p.i = 0; s.p_k.i = 1;
+            case I_SEP:
+                s.p.flags |= i.param;
+                s.p_k.flags |= i.param;
+                break;
+            case I_XCE:
+                btmp  = s.p.e;
+                s.p.e = s.p.c;
+                s.p.c = btmp;
+                
+                btmp = s.p_k.e;
+                s.p_k.e = s.p_k.c;
+                s.p_k.c = btmp;
+                break;
+            case I_BRK:
+                check_e();
+                record_jump(s, s.p.e ? rh->emu_exc.brk : rh->norm_exc.brk);
+                block_ended = true;
+                break;
+            case I_BRL:
+                record_jump(s, s.pc + i.size + i.param);
+                block_ended = true;
+                break;
+            case I_RTI:
+            case I_RTS:
+            case I_JMP:
+            case I_JSR:
+            case I_STP:
+            case I_WAI:
+                block_ended = true;
+                break;
+            case I_PLP:
+                s.p_k.pc = false;
+                break;
+        }
+        
+        if (s.p_k.pc == false) break; // can't continue if we don't know where to go...
+        else s.pc += i.size;
+        
+    } while (!block_ended);
+    
+    si.block_size = s.block_size;
+    
+    d->visited_addresses.insert(si.pc);
+    d->basic_blocks.push_back(si);
 }
 
 static const char *reg(const instruction_def *i)
@@ -219,32 +382,32 @@ static void print_insn(instruction &i, uint8_t *mem)
 			printf("[$%X]", i.param);
 			break;
 		case DirectPage:
-			printf("$%X ;d", i.param);
+			printf("$%X ; d", i.param);
 			break;
 		case DPIndexed:
-			printf("$%X,%s ;d", i.param, reg(i.def));
+			printf("$%X,%s ; d", i.param, reg(i.def));
 			break;
 		case DPIndexedIndirect:
-			printf("($%X,%s) ;d", i.param, reg(i.def));
+			printf("($%X,%s) ; d", i.param, reg(i.def));
 			break;
 		case DPIndirect:
-			printf("($%X) ;d", i.param);
+			printf("($%X) ; d", i.param);
 			break;
 		case DPIndirectIndexed:
-			printf("($%X),%s ;d", i.param, reg(i.def));
+			printf("($%X),%s ; d", i.param, reg(i.def));
 			break;
 		case DPIndirectLong:
-			printf("[$%X] ;d", i.param);
+			printf("[$%X] ; d", i.param);
 			break;
 		case DPIndirectLongIndexed:
-			printf("[$%X],%s ;d", i.param, reg(i.def));
+			printf("[$%X],%s ; d", i.param, reg(i.def));
 			break;
 		case PCRelative:
 		case PCRelativeLong:
-			printf("$%X ;pc", i.param);
+			printf("$%X ; pc", i.param);
 			break;
 		case StackRelative:
-			printf("$%X ;s", i.param);
+			printf("$%X ; s", i.param);
 			break;
 		case StackRelativeIndirectIndexed:
 			printf("(#%X),%s ;", i.param, reg(i.def));
@@ -258,7 +421,7 @@ static void print_insn(instruction &i, uint8_t *mem)
 			break;
 	}
 
-	printf("\t; ");
+	printf("\t; args: %#x regs: %#x # ", i.def->args, i.def->regs);
 
 	for (size_t n = 0; n < i.size; n++) {
 		printf("%.2X ", mem[n]);
@@ -267,67 +430,44 @@ static void print_insn(instruction &i, uint8_t *mem)
 	printf("\n");
 }
 
-#define a(n) for (int i = 0; i < n; i++) {param = (param << 8) | *mem++; isize++;}
-#define a8() a(1)
-#define a16() a(2)
-#define a24() a(3)
-
-static instruction disasm_one_insn(snes_mapper &map, cpu_state &s)
+void disassemble(snes_mapper &_map, snes_rom_header &_rh)
 {
-	uint8_t *mem = (uint8_t*)map.lookup(s.pb, s.pc);
-	uint8_t op = *mem++;
-	int param = 0, isize = 1;
-	const instruction_def &insn = opcodes[op];
-	
-	switch (insn.args) {
-		case None:
-		case StackPull:
-		case StackPush:
-			break;
-		case Interrupt:
-		case DirectPage:
-		case DPIndirectIndexed:
-		case DPIndirectLongIndexed:
-		case DPIndexedIndirect:
-		case DPIndexed:
-		case DPIndirect:
-		case DPIndirectLong:
-		case PCRelative:
-		case StackRelative:
-		case StackRelativeIndirectIndexed:
-			a8();
-			break;
-		case Absolute:
-		case AbsIndexed:
-		case AbsIndirect:
-		case AbsIndexedIndirect:
-		case PCRelativeLong:
-		case BlockMove:
-			a16();
-			break;
-		case AbsLong:
-		case AbsLongIndexed:
-			a24();
-			break;
-		case Immediate:
-			if (s.p.e) {a8();} else {a16();}
-			break;
-	}
-	
-	instruction i = (instruction){&insn, param, isize};
-	
-	print_insn(i, mem-isize);
-	update_state(i, s);
-	return i;
-}
+    map = &_map;
+    rh  = &_rh;
+    
+    disassembler _d;
+    d = &_d;
 
-void disassemble(snes_mapper &map, snes_rom_header &rh)
-{
-	cpu_state s(rh);
-
-	assert(s.p.flags == 0x134);
-
-	fprintf(stderr, "-Disassembling from entry point\n");
-	for (int i = 0; i < 128; i++) disasm_one_insn(map, s);
-	fprintf(stderr, "-That's all for now\n");
+    {
+        cpu_state s;
+        
+        // Scan forwards from initial execution state
+        s.p.i = 1; s.p_k.i = 1;
+        s.p.x = 1; s.p_k.x = 1;
+        s.p.m = 1; s.p_k.m = 1;
+        s.p.e = 1; s.p_k.e = 1;
+        s.pc = rh->emu_exc.main; s.p_k.pc = 1;
+        s.pb = 0; s.p_k.pb = 0;
+        
+        assert(s.p.flags == 0x134);
+        
+        d->worklist.push(s);
+    }
+    
+    do {
+        cpu_state &s = d->worklist.front();
+        scan_basic_block(s);
+        d->worklist.pop();
+    } while (!d->worklist.empty());
+    
+    int i = 0, n_basic_blocks = d->basic_blocks.size();
+    
+    for (; i < n_basic_blocks; i++) {
+        cpu_state &s = d->basic_blocks[i];
+        printf("- Basic block %d of %d at %#x, %d insns\n", i, n_basic_blocks, s.pc, s.block_size);
+    }
+    
+//	fprintf(stderr, "-Disassembling from entry point\n");
+//	for (int i = 0; i < 128; i++) disasm_one_insn(map, s);
+//	fprintf(stderr, "-That's all for now\n");
 }

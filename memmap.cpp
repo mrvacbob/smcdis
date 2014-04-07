@@ -8,6 +8,7 @@
 
 #include "memmap.h"
 #include <stdio.h>
+#include <assert.h>
 
 static uint32_t makeaddr(uint8_t bank, uint16_t addr) {return (bank << 16) | addr;}
 
@@ -45,7 +46,7 @@ uint8_t *snes_mapper::lookup(uint32_t a)
 	for (i = map.begin(); i != map.end(); i++) {
 		map_item &m = *i;
 
-		if (m.begin > a) return NULL;
+		if (m.begin > a) {return NULL;}
 		else if (m.begin <= a && a <= m.end) return base + m.rom_off + (a - m.begin);
 	}
 	
@@ -54,5 +55,13 @@ uint8_t *snes_mapper::lookup(uint32_t a)
 
 uint8_t *snes_mapper::lookup(uint8_t bank, uint16_t addr)
 {
-	return lookup(makeaddr(bank, addr));
+	uint8_t *result = lookup(makeaddr(bank, addr));
+    
+    if (!result) {
+        fprintf(stderr, "- Couldn't read memory at $%.2X:%.4X. The memory map is likely wrong.\n", bank, addr);
+        exit(1);
+        return NULL;
+    }
+    
+    return result;
 }

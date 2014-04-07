@@ -275,8 +275,8 @@ static bool map_memory(snes_mapper &map, snes_rom_info &ri)
 	if (ri.map_mode == 0x20) {
 		fprintf(stderr, "-Mapping LoROM...\n");
 		map.map_rom(0x00, 0x7D, 0x8000, 0xFFFF, smc_off, rom_size - smc_off);
-		fprintf(stderr, "\n");
-		return 0;
+		fprintf(stderr, "\n");        
+        return 0;
 	}
 	
 	fprintf(stderr, "-No mapping for mode %x\n", ri.map_mode);
